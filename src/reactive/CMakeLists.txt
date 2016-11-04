@@ -125,6 +125,7 @@ catkin_package(
 # add_executable(reactive_node src/reactive_node.cpp)
 add_executable(random_driver random_driver.cpp)
 add_executable(squarewall squarewall.cpp)
+add_executable(uwall uwall.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -137,6 +138,7 @@ add_executable(squarewall squarewall.cpp)
 
 target_link_libraries(random_driver ${catkin_LIBRARIES})
 target_link_libraries(squarewall ${catkin_LIBRARIES})
+target_link_libraries(uwall ${catkin_LIBRARIES})
 
 
 
