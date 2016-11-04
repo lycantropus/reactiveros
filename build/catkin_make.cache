@@ -1,2 +1,0 @@
-husky_customization/husky_custom_description:husky_customization/husky_custom_gazebo:husky_simulator/husky_gazebo:husky_simulator/husky_simulator:reactive
--DCATKIN_DEVEL_PREFIX=/home/lycantropus/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/home/lycantropus/catkin_ws/install -G Unix Makefiles
