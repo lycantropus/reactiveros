@@ -1,9 +1,9 @@
 #include "uwall.h"
 #include <math.h>
 #define PI 3.141592
-#define SUBSCRIBER_BUFFER_SIZE 100  // Size of buffer for subscriber.
+#define SUBSCRIBER_BUFFER_SIZE 1  // Size of buffer for subscriber.
 #define PUBLISHER_BUFFER_SIZE 1000  // Size of buffer for publisher.
-#define WALL_DISTANCE 0.5
+#define WALL_DISTANCE 2
 #define MAX_SPEED 0.1
 #define P 10    // Proportional constant for controller
 #define D 5     // Derivative constant for controller
@@ -85,8 +85,19 @@ void WallFollowing::messageCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
   double distMin;
   distMin = msg->ranges[minIndex];
   distFront = msg->ranges[size/2];
-  e = distMin - wallDistance;
+  
   diffE = (distMin - wallDistance) - e;
+  e = distMin - wallDistance;
+
+  if(debug==true)
+  {
+    ROS_INFO("anglemin :%f", angleMin);
+    ROS_INFO("distmin: %f ",distMin);
+    ROS_INFO("e: %f", e);
+    ROS_INFO("diffE %f", diffE);
+    ROS_INFO("distFront %f", distFront);
+    ROS_INFO("wallDistance: %f", wallDistance);
+  }
   
   //Invoking method for publishing message
   publishMessage();

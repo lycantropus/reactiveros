@@ -42,19 +42,19 @@ float average=0.0;
   average=average/ranges.size();
 
 
-  if(average < 1.8) obstacle_ = true;
+  if(ranges[ranges.size()/2] < 1.0 || ranges[ranges.size()/4] < 1.0 ) obstacle_ = true;
   else obstacle_ = false;
 
   if(obstacle_==false)
   {
-    linear=0.2;
+    linear=0.4;
     angular=0.0;
      ROS_INFO("no obstacle \n");
   }
   else
   {
-    linear=0.2;
-    angular=-1;
+    linear=0.0;
+    angular=-0.4;
     ROS_INFO("obstacle \n");
   }
 
@@ -62,6 +62,8 @@ float average=0.0;
   ROS_INFO("vlinear %lf", linear);
   ROS_INFO("vangular %lf", angular);
   ROS_INFO("average: %f", average);
+  ROS_INFO("frontdistance: %f",ranges[ranges.size()/2] );
+  ROS_INFO("quarterrange: %f", ranges[ranges.size()/4]);
   }
 }
 
