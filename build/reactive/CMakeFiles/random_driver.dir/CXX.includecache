@@ -1,0 +1,16 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/lycantropus/catkin_ws/src/reactive/random_driver.cpp
+ros/ros.h
+-
+geometry_msgs/Twist.h
+-
+stdlib.h
+-
+

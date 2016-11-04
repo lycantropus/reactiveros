@@ -1,0 +1,8 @@
+prefix=/home/lycantropus/catkin_ws/devel
+
+Name: reactive
+Description: Description of reactive
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/lycantropus/catkin_ws/devel/lib 
+Requires: 

@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/lycantropus/catkin_ws/src/reactive/squarewall.cpp
+ros/ros.h
+-
+geometry_msgs/Twist.h
+-
+stdlib.h
+-
+std_msgs/String.h
+/home/lycantropus/catkin_ws/src/reactive/std_msgs/String.h
+nav_msgs/Odometry.h
+/home/lycantropus/catkin_ws/src/reactive/nav_msgs/Odometry.h
+sensor_msgs/LaserScan.h
+/home/lycantropus/catkin_ws/src/reactive/sensor_msgs/LaserScan.h
+
