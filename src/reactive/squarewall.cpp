@@ -42,7 +42,7 @@ float average=0.0;
   average=average/ranges.size();
 
 
-  if(ranges[ranges.size()/2] < 1.0 || ranges[ranges.size()/4] < 1.0 ) obstacle_ = true;
+  if(ranges[ranges.size()/2] < 1.0 || ranges[ranges.size()/4] < 0.75 ) obstacle_ = true;
   else obstacle_ = false;
 
   if(obstacle_==false)
