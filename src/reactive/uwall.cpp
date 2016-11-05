@@ -3,8 +3,8 @@
 #define PI 3.141592
 #define SUBSCRIBER_BUFFER_SIZE 1  // Size of buffer for subscriber.
 #define PUBLISHER_BUFFER_SIZE 1000  // Size of buffer for publisher.
-#define WALL_DISTANCE 2
-#define MAX_SPEED 0.1
+#define WALL_DISTANCE 1
+#define MAX_SPEED 0.5
 #define P 10    // Proportional constant for controller
 #define D 5     // Derivative constant for controller
 #define ANGLE_COEF 1    // Proportional constant for angle controller
@@ -69,15 +69,24 @@ void WallFollowing::messageCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
   int size = msg->ranges.size();
 
   //Variables whith index of highest and lowest value in array.
-  int minIndex = size*(direction+1)/4;
-  int maxIndex = size*(direction+3)/4;
+  int minIndex = 0;
+  int maxIndex = 0;
 
   //This cycle goes through array and finds minimum
-  for(int i = minIndex; i < maxIndex; i++)
+  //i=minindex; i<maxindex
+  float lowestDistance = 100;
+  for(int i = 0; i < msg->ranges.size(); i++)
   {
-    if (msg->ranges[i] < msg->ranges[minIndex] && msg->ranges[i]> 0.0){
-      minIndex = i;
+    //std:printf("range %d: %f ", i, msg->ranges[i]);
+
+    if (msg->ranges[i]>0.5 && msg->ranges[i] < lowestDistance)
+    {
+      lowestDistance =  msg->ranges[i]; 
+      minIndex=i;
     }
+    //if (msg->ranges[i] < msg->ranges[minIndex] && msg->ranges[i]> 0.0){
+     // minIndex = i;
+    //}
   }
 
   //Calculation of angles from indexes and storing data to class variables.
@@ -91,6 +100,9 @@ void WallFollowing::messageCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 
   if(debug==true)
   {
+    ROS_INFO("minindex: %d", minIndex);
+    ROS_INFO("maxindex: %d", maxIndex);
+
     ROS_INFO("anglemin :%f", angleMin);
     ROS_INFO("distmin: %f ",distMin);
     ROS_INFO("e: %f", e);
@@ -105,55 +117,6 @@ void WallFollowing::messageCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 
 
 
-void odomCallback(const nav_msgs::Odometry::ConstPtr& msg)
-{ 
-  if(debug==true)
-  {
-    ROS_INFO("Seq: [%d]", msg->header.seq);
-    ROS_INFO("Position-> x: [%f], y: [%f], z: [%f]", msg->pose.pose.position.x,msg->pose.pose.position.y, msg->pose.pose.position.z);
-    ROS_INFO("Orientation-> x: [%f], y: [%f], z: [%f], w: [%f]", msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
-    ROS_INFO("Vel-> Linear: [%f], Angular: [%f]", msg->twist.twist.linear.x,msg->twist.twist.angular.z);
-  }
-  
-}
-
-void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
-{
-  std::vector<float> ranges(msg->ranges.begin(), msg->ranges.end());
-  std::vector<float>::iterator range_it = std::max_element(ranges.begin(), ranges.end());
-
-float average=0.0;
-  for(int i=0; i<ranges.size(); i++)
-  {
-    average+=ranges[i];
-  //::printf("%i : %f \n", i, ranges[i]);  
-  }
-  
-  average=average/ranges.size();
-
-
-  if(average < 1.8) obstacle_ = true;
-  else obstacle_ = false;
-
-  if(obstacle_==false)
-  {
-    linear=0.2;
-    angular=0.0;
-     ROS_INFO("no obstacle \n");
-  }
-  else
-  {
-    linear=0.2;
-    angular=-1;
-    ROS_INFO("obstacle \n");
-  }
-
-            if(debug==true){
-  ROS_INFO("vlinear %lf", linear);
-  ROS_INFO("vangular %lf", angular);
-  ROS_INFO("average: %f", average);
-  }
-}
 
 int main(int argc, char **argv) 
 {
