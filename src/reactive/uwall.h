@@ -27,3 +27,19 @@ public:
 	double distFront;    // Distance, measured by ranger in front of robot.
 	ros::Publisher pubMessage;  // Object for publishing messages.
 };
+
+class WallSearching
+{
+  public:
+    WallSearching(ros::Publisher pub, double wallDist, double maxSp);
+    ~WallSearching();
+
+    void publishMessage();
+    void messageCallback(const sensor_msgs::LaserScan::ConstPtr& msg);
+
+    double wallDistance;
+    double maxSpeed;
+    double distFront;
+    double angle;
+    ros::Publisher pubMessage;
+};

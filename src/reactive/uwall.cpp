@@ -12,10 +12,64 @@
 #define PUBLISHER_TOPIC "husky_velocity_controller/cmd_vel"
 #define SUBSCRIBER_TOPIC "scan"
 
-
-float min_range_ = 5.0;
-bool obstacle_ = false;
 bool debug=true;
+
+enum State
+{
+  Searching
+};
+
+State state = Searching;
+
+
+
+WallSearching::WallSearching(ros::Publisher pub, double wallDist, double maxSp)
+{
+  pubMessage=pub;
+  wallDistance=wallDist;
+  maxSpeed=maxSp;
+  angle=2.0;
+
+}
+
+WallSearching::~WallSearching()
+{
+}
+
+void WallSearching::publishMessage()
+{
+  geometry_msgs::Twist msg;
+
+
+  if( distFront < wallDistance)
+  {
+    msg.linear.x=0.0;
+  }
+   if(distFront<6.0)
+  {
+    msg.linear.x=maxSpeed;
+  }
+  else
+  {
+    msg.linear.x=maxSpeed;
+    angle-=0.001;
+    msg.angular.z=angle;
+  }
+
+  ROS_INFO("angle: %f", angle);
+  pubMessage.publish(msg);
+
+}
+
+void WallSearching::messageCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
+{
+  int size = msg->ranges.size();
+
+  distFront= msg->ranges[size/2];
+
+
+  publishMessage();
+}
 
 
 WallFollowing::WallFollowing(ros::Publisher pub, double wallDist, double maxSp, int dir, double pr, double di, double an)
@@ -113,20 +167,27 @@ void WallFollowing::messageCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 
 
 
+
+
 int main(int argc, char **argv) 
 {
   //Initializes ROS, and sets up a node
   ros::init(argc, argv, "wallFollowing");
+  
   ros::NodeHandle nh;
+  
 
-  //ros::Subscriber subOdom = nh.subscribe("husky_velocity_controller/odom", 100, odomCallback);
- 
   ros::Publisher pub=nh.advertise<geometry_msgs::Twist>(PUBLISHER_TOPIC, PUBLISHER_BUFFER_SIZE);
 
+  //WallFollowing *wallFollow = new WallFollowing(pub, WALL_DISTANCE, MAX_SPEED, DIRECTION, P, D, ANGLE_COEF);
 
-  WallFollowing *WallFollow = new WallFollowing(pub, WALL_DISTANCE, MAX_SPEED, DIRECTION, P, D, ANGLE_COEF);
+  //ros::Subscriber subFollow = nh.subscribe(SUBSCRIBER_TOPIC, SUBSCRIBER_BUFFER_SIZE, &WallFollowing::messageCallback, wallFollow);
 
-  ros::Subscriber subLaser = nh.subscribe(SUBSCRIBER_TOPIC, SUBSCRIBER_BUFFER_SIZE, &WallFollowing::messageCallback, WallFollow);
+  WallSearching *wallSearch = new WallSearching(pub, WALL_DISTANCE, MAX_SPEED);
+
+  ros::Subscriber subSearch = nh.subscribe(SUBSCRIBER_TOPIC, SUBSCRIBER_BUFFER_SIZE, &WallSearching::messageCallback, wallSearch);
+
+  
 
 while(ros::ok()) 
   {
