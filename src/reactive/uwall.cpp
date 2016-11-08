@@ -3,7 +3,7 @@
 #define PI 3.141592
 #define SUBSCRIBER_BUFFER_SIZE 1  // Size of buffer for subscriber.
 #define PUBLISHER_BUFFER_SIZE 1000  // Size of buffer for publisher.
-#define WALL_DISTANCE 0.5
+#define WALL_DISTANCE 1
 #define MAX_SPEED 0.5
 #define P 10    // Proportional constant for controller
 #define D 5     // Derivative constant for controller
@@ -16,10 +16,13 @@ bool debug=true;
 
 enum State
 {
-  Searching
+  SEARCHING = 1,
+  FOLLOWING = 2
 };
 
-State state = Searching;
+int state;
+bool updated;
+float factor= 1.0;
 
 
 
@@ -28,7 +31,7 @@ WallSearching::WallSearching(ros::Publisher pub, double wallDist, double maxSp)
   pubMessage=pub;
   wallDistance=wallDist;
   maxSpeed=maxSp;
-  angle=2.0;
+  angle=1.0;
 
 }
 
@@ -40,19 +43,22 @@ void WallSearching::publishMessage()
 {
   geometry_msgs::Twist msg;
 
-
-  if( distFront < wallDistance)
+  
+  if( distFront <= wallDistance*1.5)
   {
     msg.linear.x=0.0;
+    state=2;
+    updated=false;
   }
-   if(distFront<6.0)
+   if(distFront<6)
   {
     msg.linear.x=maxSpeed;
   }
   else
   {
-    msg.linear.x=maxSpeed;
-    angle-=0.001;
+    msg.linear.x=maxSpeed/factor;
+    angle-=0.01*factor;
+    factor=factor-factor/100;
     msg.angular.z=angle;
   }
 
@@ -66,7 +72,8 @@ void WallSearching::messageCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
   int size = msg->ranges.size();
 
   distFront= msg->ranges[size/2];
-
+  ROS_INFO("distFront: %f", distFront);
+  ROS_INFO("wallDistance2: %f", wallDistance*2);
 
   publishMessage();
 }
@@ -143,9 +150,7 @@ void WallFollowing::messageCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
   distMin = msg->ranges[minIndex];
   distFront = msg->ranges[size/2];
   
-  //error from previous loop
   diffE = (distMin - wallDistance) - e;
-  //setting error for next
   e = distMin - wallDistance;
 
   if(debug==true)
@@ -176,22 +181,50 @@ int main(int argc, char **argv)
   
   ros::NodeHandle nh;
   
-
+  state=1;
+  updated=false;
+  
   ros::Publisher pub=nh.advertise<geometry_msgs::Twist>(PUBLISHER_TOPIC, PUBLISHER_BUFFER_SIZE);
 
   //WallFollowing *wallFollow = new WallFollowing(pub, WALL_DISTANCE, MAX_SPEED, DIRECTION, P, D, ANGLE_COEF);
 
   //ros::Subscriber subFollow = nh.subscribe(SUBSCRIBER_TOPIC, SUBSCRIBER_BUFFER_SIZE, &WallFollowing::messageCallback, wallFollow);
-
-  WallSearching *wallSearch = new WallSearching(pub, WALL_DISTANCE, MAX_SPEED);
-
-  ros::Subscriber subSearch = nh.subscribe(SUBSCRIBER_TOPIC, SUBSCRIBER_BUFFER_SIZE, &WallSearching::messageCallback, wallSearch);
-
+  WallSearching *wallSearch;
+  ros::Subscriber subSearch;
+  WallFollowing *wallFollow;
+  ros::Subscriber subFollow;
   
+  ros::Rate rate(10);
 
 while(ros::ok()) 
   {
-    ros::spin();
+    ROS_INFO("state: %d", state);
+    if(updated == false)
+    {
+      switch (state) {
+      case 1:
+      wallSearch = new WallSearching(pub, WALL_DISTANCE, MAX_SPEED);
+      subSearch = nh.subscribe(SUBSCRIBER_TOPIC, SUBSCRIBER_BUFFER_SIZE, &WallSearching::messageCallback, wallSearch);
+      updated=true;
+      break;
+
+      case 2:
+      
+      wallFollow = new WallFollowing(pub, WALL_DISTANCE, MAX_SPEED, DIRECTION, P, D, ANGLE_COEF);
+      subFollow = nh.subscribe(SUBSCRIBER_TOPIC, SUBSCRIBER_BUFFER_SIZE, &WallFollowing::messageCallback, wallFollow);
+      delete wallSearch;
+      subSearch.shutdown(); 
+      updated=true;
+      break;
+
+      default:
+        printf("eish\n");
+      break;
+      }
+    }
+
+    ros::spinOnce();
+    rate.sleep();
   }
 
   return 0;
