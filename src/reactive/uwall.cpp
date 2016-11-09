@@ -1,5 +1,6 @@
 #include "uwall.h"
 #include <math.h>
+#include <ctime>
 #define PI 3.141592
 #define SUBSCRIBER_BUFFER_SIZE 1  // Size of buffer for subscriber.
 #define PUBLISHER_BUFFER_SIZE 1000  // Size of buffer for publisher.
@@ -12,19 +13,63 @@
 #define PUBLISHER_TOPIC "husky_velocity_controller/cmd_vel"
 #define SUBSCRIBER_TOPIC "scan"
 
+
 bool debug=true;
 
 enum State
 {
   SEARCHING = 1,
-  FOLLOWING = 2
+  FOLLOWING = 2,
+  CENTERING = 3
 };
 
 int state;
 bool updated;
 float factor= 1.0;
 
+time_t begin_time;
 
+WallCentering::WallCentering(ros::Publisher pub, double wallDist, double maxSp)
+{
+  pubMessage=pub;
+  wallDistance=wallDist;
+  maxSpeed=maxSp;
+  angle=1.0;
+
+}
+
+WallCentering::~WallCentering()
+{
+}
+
+void WallCentering::publishMessage()
+{
+  geometry_msgs::Twist msg;
+
+  
+  if( distFront <= 1.0)
+  {
+    msg.linear.x=0.0;
+  }
+   else{
+    msg.linear.x=maxSpeed;
+  }
+  
+  ROS_INFO("angle: %f", angle);
+  pubMessage.publish(msg);
+
+}
+
+void WallCentering::messageCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
+{
+  int size = msg->ranges.size();
+
+  distFront= msg->ranges[size/2];
+  ROS_INFO("distFront: %f", distFront);
+  ROS_INFO("wallDistance2: %f", wallDistance*2);
+
+  publishMessage();
+}
 
 WallSearching::WallSearching(ros::Publisher pub, double wallDist, double maxSp)
 {
@@ -104,8 +149,16 @@ void WallFollowing::publishMessage()
   geometry_msgs::Twist msg;
 
   msg.angular.z = direction*(P*e + D*diffE) + angleCoef * (angleMin - PI*direction/2);    //PD controller
-
-  if (distFront < wallDistance/2){
+  time_t endTime;
+  time(&endTime);
+  ROS_INFO("time: %f", double(endTime-begin_time));
+  if((endTime - begin_time) > 10 && distFront < 25.0){
+    
+    msg.linear.x=0.0;
+    state=3;
+    updated=false;
+  }
+  else if (distFront < wallDistance/2){
     msg.linear.x = -1;
   }
   else if (distFront < wallDistance * 2){
@@ -183,6 +236,7 @@ int main(int argc, char **argv)
   
   state=1;
   updated=false;
+
   
   ros::Publisher pub=nh.advertise<geometry_msgs::Twist>(PUBLISHER_TOPIC, PUBLISHER_BUFFER_SIZE);
 
@@ -193,6 +247,8 @@ int main(int argc, char **argv)
   ros::Subscriber subSearch;
   WallFollowing *wallFollow;
   ros::Subscriber subFollow;
+  WallCentering *wallCenter;
+  ros::Subscriber subCenter;
   
   ros::Rate rate(10);
 
@@ -209,11 +265,19 @@ while(ros::ok())
       break;
 
       case 2:
-      
+      time(&begin_time);
       wallFollow = new WallFollowing(pub, WALL_DISTANCE, MAX_SPEED, DIRECTION, P, D, ANGLE_COEF);
       subFollow = nh.subscribe(SUBSCRIBER_TOPIC, SUBSCRIBER_BUFFER_SIZE, &WallFollowing::messageCallback, wallFollow);
       delete wallSearch;
       subSearch.shutdown(); 
+      updated=true;
+      break;
+      case 3:
+      ROS_INFO("estado3");
+      wallCenter= new WallCentering(pub, WALL_DISTANCE, MAX_SPEED);
+      subCenter = nh.subscribe(SUBSCRIBER_TOPIC, SUBSCRIBER_BUFFER_SIZE, &WallCentering::messageCallback, wallCenter);
+      delete wallFollow;
+      subFollow.shutdown();
       updated=true;
       break;
 
