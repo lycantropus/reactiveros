@@ -50,7 +50,7 @@ void WallSearching::publishMessage()
     state=2;
     updated=false;
   }
-   if(distFront<6)
+   if(distFront<wallDistance*6)
   {
     msg.linear.x=maxSpeed;
   }
@@ -105,7 +105,7 @@ void WallFollowing::publishMessage()
 
   msg.angular.z = direction*(P*e + D*diffE) + angleCoef * (angleMin - PI*direction/2);    //PD controller
 
-  if (distFront < wallDistance){
+  if (distFront < wallDistance/2){
     msg.linear.x = -1;
   }
   else if (distFront < wallDistance * 2){
