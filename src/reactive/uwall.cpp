@@ -20,7 +20,8 @@ enum State
 {
   SEARCHING = 1,
   FOLLOWING = 2,
-  CENTERING = 3
+  CENTERING = 3,
+  CENTERED =4
 };
 
 int state;
@@ -29,12 +30,21 @@ float factor= 1.0;
 
 time_t begin_time;
 
-WallCentering::WallCentering(ros::Publisher pub, double wallDist, double maxSp)
+WallCentering::WallCentering(ros::Publisher pub, double wallDist, double maxSp, int dir, double pr, double di, double an)
 {
   pubMessage=pub;
   wallDistance=wallDist;
   maxSpeed=maxSp;
   angle=1.0;
+  distFirst=0.0;
+  halfDist=0.0;
+  set=false;
+  direction = dir;
+  p = pr;
+  d = di;
+  angleCoef = an;
+  e = 0;
+  angleMin = 0;
 
 }
 
@@ -47,12 +57,20 @@ void WallCentering::publishMessage()
   geometry_msgs::Twist msg;
 
   
-  if( distFront <= 1.0)
-  {
+  
+msg.angular.z = direction*(P*e + D*diffE) + angleCoef * (angleMin - PI*direction/2);
+  if( distFront <= halfDist){
     msg.linear.x=0.0;
+    state=4;
+    updated=false;
   }
-   else{
-    msg.linear.x=maxSpeed;
+  else if (fabs(angleMin)>1.75){
+    msg.linear.x = 0.2*maxSpeed;
+  } 
+  else{
+
+    msg.linear.x=maxSpeed*0.5;
+
   }
   
   ROS_INFO("angle: %f", angle);
@@ -65,6 +83,38 @@ void WallCentering::messageCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
   int size = msg->ranges.size();
 
   distFront= msg->ranges[size/2];
+
+  if(set==false){
+    distFirst=distFront;
+    halfDist = wallDistance = distFirst/2.0;
+
+    set=true;
+  }
+
+  int minIndex = 0;
+  
+  float lowestDistance = 100;
+  for(int i = 0; i < msg->ranges.size(); i++)
+  {
+    
+    //the 0.4 is used to filter some error measurements
+    if (msg->ranges[i]>0.4 && msg->ranges[i] < lowestDistance)
+    {
+      lowestDistance =  msg->ranges[i]; 
+      minIndex=i;
+    }
+    
+  }
+
+  //Calculation of angles from indexes and storing data to class variables.
+  angleMin = (minIndex-size/2)*msg->angle_increment;
+  double distMin;
+  distMin = msg->ranges[minIndex];
+  distFront = msg->ranges[size/2];
+  
+  diffE = (distMin - wallDistance) - e;
+  e = distMin - wallDistance;
+
   ROS_INFO("distFront: %f", distFront);
   ROS_INFO("wallDistance2: %f", wallDistance*2);
 
@@ -88,7 +138,7 @@ void WallSearching::publishMessage()
 {
   geometry_msgs::Twist msg;
 
-  
+    
   if( distFront <= wallDistance*1.5)
   {
     msg.linear.x=0.0;
@@ -274,13 +324,18 @@ while(ros::ok())
       break;
       case 3:
       ROS_INFO("estado3");
-      wallCenter= new WallCentering(pub, WALL_DISTANCE, MAX_SPEED);
+      wallCenter= new WallCentering(pub, WALL_DISTANCE, MAX_SPEED, DIRECTION, P, D, ANGLE_COEF);
       subCenter = nh.subscribe(SUBSCRIBER_TOPIC, SUBSCRIBER_BUFFER_SIZE, &WallCentering::messageCallback, wallCenter);
       delete wallFollow;
       subFollow.shutdown();
       updated=true;
       break;
-
+      case 4:
+      ROS_INFO("acabei!");
+      delete wallCenter;
+      subCenter.shutdown();
+      updated=true;
+      break;
       default:
         printf("eish\n");
       break;

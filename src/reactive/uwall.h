@@ -9,7 +9,7 @@
 class WallCentering
 {
   public:
-    WallCentering(ros::Publisher pub, double wallDist, double maxSp);
+    WallCentering(ros::Publisher pub, double wallDist, double maxSp, int dir, double pr, double di, double an);
     ~WallCentering();
 
     void publishMessage();
@@ -19,7 +19,18 @@ class WallCentering
     double maxSpeed;
     double distFront;
     double angle;
+    double e;
+    double p;            
+    double d;
+    double diffE;            
+    double angleCoef;    
+    int direction;      
+    double distFirst;
+    double halfDist;
+    bool set;
+    double angleMin;
     ros::Publisher pubMessage;
+    
 };
 
 
