@@ -69,7 +69,7 @@ msg.angular.z = direction*(P*e + D*diffE) + angleCoef * (angleMin - PI*direction
   } 
   else{
 
-    msg.linear.x=maxSpeed*0.5;
+    msg.linear.x=maxSpeed;
 
   }
   
@@ -94,7 +94,7 @@ void WallCentering::messageCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
   int minIndex = 0;
   
   float lowestDistance = 100;
-  for(int i = 0; i < msg->ranges.size(); i++)
+  for(int i = 0; i < msg->ranges.size()/2; i++)
   {
     
     //the 0.4 is used to filter some error measurements
@@ -335,6 +335,7 @@ while(ros::ok())
       delete wallCenter;
       subCenter.shutdown();
       updated=true;
+      return 0;
       break;
       default:
         printf("eish\n");
